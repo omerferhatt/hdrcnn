@@ -37,15 +37,19 @@
  " Date: Aug 2017
 """
 
-import os, sys
+import os
+import sys
 import tensorflow as tf
 import tensorlayer as tl
 import numpy as np
-import network, img_io
+
+import network
+import img_io
 
 eps = 1e-5
 
-def print_(str, color='', bold=False):
+
+def print_(string, color='', bold=False):
     if color == 'w':
         sys.stdout.write('\033[93m')
     elif color == "e":
@@ -56,7 +60,7 @@ def print_(str, color='', bold=False):
     if bold:
         sys.stdout.write('\033[1m')
 
-    sys.stdout.write(str)
+    sys.stdout.write(string)
     sys.stdout.write('\033[0m')
     sys.stdout.flush()
 
@@ -68,8 +72,10 @@ tf.flags.DEFINE_integer("height", "768", "Reconstruction image height")
 tf.flags.DEFINE_string("im_dir", "data", "Path to image directory or an individual image")
 tf.flags.DEFINE_string("out_dir", "out", "Path to output directory")
 tf.flags.DEFINE_string("params", "hdrcnn_params.npz", "Path to trained CNN weights")
-tf.flags.DEFINE_float("scaling", "1.0", "Pre-scaling, which is followed by clipping, in order to remove compression artifacts close to highlights")
-tf.flags.DEFINE_float("gamma", "1.0", "Gamma/exponential curve applied before, and inverted after, prediction. This can be used to control the boost of reconstructed pixels.")
+tf.flags.DEFINE_float("scaling", "1.0", "Pre-scaling, which is followed by clipping, in order to "
+                                        "remove compression artifacts close to highlights")
+tf.flags.DEFINE_float("gamma", "1.0", "Gamma/exponential curve applied before, and inverted after, "
+                                      "prediction. This can be used to control the boost of reconstructed pixels.")
 
 # Round to be multiple of 32, so that autoencoder pooling+upsampling
 # yields same size as input image
@@ -77,7 +83,7 @@ sx = int(np.maximum(32, np.round(FLAGS.width/32.0)*32))
 sy = int(np.maximum(32, np.round(FLAGS.height/32.0)*32))
 if sx != FLAGS.width or sy != FLAGS.height:
     print_("Warning: ", 'w', True)
-    print_("prediction size has been changed from %dx%d pixels to %dx%d\n"%(FLAGS.width, FLAGS.height, sx, sy), 'w')
+    print_("prediction size has been changed from %dx%d pixels to %dx%d\n" % (FLAGS.width, FLAGS.height, sx, sy), 'w')
     print_("         pixels, to comply with autoencoder pooling and up-sampling.\n\n", 'w')
 
 # Info
@@ -118,7 +124,7 @@ y = network.get_final(net, x)
 sess = tf.InteractiveSession()
 
 # Load trained CNN weights
-print_("\nLoading trained parameters from '%s'..."%FLAGS.params)
+print_("\nLoading trained parameters from '%s'..." % FLAGS.params)
 load_params = tl.files.load_npz(name=FLAGS.params)
 tl.files.assign_params(sess, load_params, net)
 print_("\tdone\n")
@@ -129,15 +135,15 @@ if not os.path.exists(FLAGS.out_dir):
 print_("\nStarting prediction...\n\n")
 k = 0
 for i in range(len(frames)):
-    print("Frame %d: '%s'"%(i,frames[i]))
+    print("Frame %d: '%s'" % (i, frames[i]))
 
     try:
         # Read frame
         print_("\tReading...")
-        x_buffer = img_io.readLDR(frames[i], (sy,sx), True, FLAGS.scaling)
+        x_buffer = img_io.readLDR(frames[i], (sy, sx), True, FLAGS.scaling)
         print_("\tdone")
 
-        print_("\t(Saturation: %0.2f%%)\n" % (100.0*(x_buffer>=1).sum()/x_buffer.size), 'm')
+        print_("\t(Saturation: %0.2f%%)\n" % (100.0*(x_buffer >= 1).sum()/x_buffer.size), 'm')
 
         # Run prediction.
         # The gamma value is used to allow for boosting/reducing the intensity of
@@ -154,7 +160,7 @@ for i in range(len(frames)):
 
         # Write to disc
         print_("\tWriting...")
-        k += 1;
+        k += 1
         img_io.writeLDR(x_buffer, '%s/%06d_in.png' % (FLAGS.out_dir, k), -3)
         img_io.writeLDR(y_gamma, '%s/%06d_out.png' % (FLAGS.out_dir, k), -3)
         img_io.writeEXR(y_predict, '%s/%06d_out.exr' % (FLAGS.out_dir, k))
@@ -162,12 +168,11 @@ for i in range(len(frames)):
 
     except img_io.IOException as e:
         print_("\n\t\tWarning! ", 'w', True)
-        print_("%s\n"%e, 'w')
+        print_("%s\n" % e, 'w')
     except Exception as e:    
         print_("\n\t\tError: ", 'e', True)
-        print_("%s\n"%e, 'e')
+        print_("%s\n" % e, 'e')
 
 print_("Done!\n")
 
 sess.close()
-
